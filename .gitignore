@@ -1,0 +1,15 @@
+# Unreal Engine folders to ignore
+Saved/
+Intermediate/
+Binaries/
+DerivedDataCache/
+
+# VS files
+*.sln
+*.vcxproj*
+.vscode/
+.vs/
+
+# OS files
+.DS_Store
+Thumbs.db
