@@ -46,7 +46,9 @@ class ADynamicOpenWorldCharacter : public ACharacter
 
 public:
 	ADynamicOpenWorldCharacter();
-	
+
+	UFUNCTION(BlueprintCallable)
+	void MoveToTargetLocation(const FVector& TargetLocation);
 
 protected:
 

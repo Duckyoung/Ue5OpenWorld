@@ -3,6 +3,7 @@
 #include "DynamicOpenWorldGameMode.h"
 #include "DynamicOpenWorldCharacter.h"
 #include "UObject/ConstructorHelpers.h"
+#include "CharacterPlayerController.h"
 
 ADynamicOpenWorldGameMode::ADynamicOpenWorldGameMode()
 {
@@ -12,4 +13,6 @@ ADynamicOpenWorldGameMode::ADynamicOpenWorldGameMode()
 	{
 		DefaultPawnClass = PlayerPawnBPClass.Class;
 	}
+
+	PlayerControllerClass = ACharacterPlayerController::StaticClass();
 }

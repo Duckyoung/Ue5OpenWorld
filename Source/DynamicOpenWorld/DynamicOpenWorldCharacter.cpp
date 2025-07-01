@@ -1,4 +1,4 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "DynamicOpenWorldCharacter.h"
 #include "Engine/LocalPlayer.h"
@@ -10,6 +10,13 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "NavigationSystem.h"
+#include "NavigationInvokerComponent.h"
+
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/Controller.h"    
+#include "CharacterPlayerController.h"
+#include "Blueprint/AIBlueprintHelperLibrary.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -50,6 +57,20 @@ ADynamicOpenWorldCharacter::ADynamicOpenWorldCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
+	// NavMesh 동적 생성 범위 설정
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
+	// Navigation Invoker 설정
+	SetCanBeDamaged(false);
+	bCanAffectNavigationGeneration = true;
+
+
+	
+
+	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+
+	// 나중에 BeginPlay에서 NavigationSystem 활성화됨
+
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 }
@@ -58,6 +79,22 @@ void ADynamicOpenWorldCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+
+	UNavigationSystemV1* NavSys = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	if (NavSys)
+	{
+		NavSys->RegisterNavigationInvoker(this, 5000.0f, 10000.0f);
+		UE_LOG(LogTemp, Warning, TEXT("Navigation Invoker"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT(" NavSys is null in BeginPlay"));
+
+	}
+
+	const ANavigationData* NavData = NavSys->GetDefaultNavDataInstance(FNavigationSystem::DontCreate);
+	UE_LOG(LogTemp, Warning, TEXT("NavData 존재 여부: %s"), NavData ? TEXT("Yes") : TEXT("No"));
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -121,10 +158,25 @@ void ADynamicOpenWorldCharacter::Look(const FInputActionValue& Value)
 	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr)
+	APlayerController* PC = Cast<APlayerController>(Controller);
+
+	if (PC && PC->IsInputKeyDown(EKeys::RightMouseButton))
 	{
-		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ADynamicOpenWorldCharacter::MoveToTargetLocation(const FVector& TargetLocation)
+{
+	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	if (!NavSys)
+	{
+		UE_LOG(LogTemp, Error, TEXT("NavSys is null in MoveToTargetLocation"));
+		return;
+	}
+	UAIBlueprintHelperLibrary::SimpleMoveToLocation(Controller, TargetLocation);
+	//FPathFollowingRequestResult Result = NavSys->SimpleMoveToLocation(GetController(), TargetLocation);
+
+	UE_LOG(LogTemp, Warning, TEXT("SimpleMoveToLocation 호출됨: %s"), *TargetLocation.ToString());
 }
